@@ -136,8 +136,18 @@
 ]
 
 #slide[
-  == PULP PL
-  - a
+  == PULP CL (compute cluster)
+  - Many RISC-V cores sharing multiple banks of *TCDM* (*T*\ightly *C*\oupled *D*\ata *M*\emory)
+  - TCDM banks can be accessed in a _single clock cycle_ due to an intricate low-latency logarithmic interconnect
+  - 2-level instruction cache: private L1 cache (512B - 1KiB) and L1.5 cache (4-8KiB) that refills from L2 memory
+  - L1 $<->$ L2 data transfers through multi-channel DMA
+]
+
+#slide[
+  == PULP CL (compute cluster)
+  - Hardware sync unit controls common sync operations such as barriers, thread dispatching, etc.
+  - Support for energy-efficient DSP extensions (Xpulp)
+  - Standard interface (Hardware Processing Engines - HWPE) for connecting custom HW accelerators to the PULP CL domain + L1 memory
 ]
 
 #slide[
@@ -149,46 +159,182 @@
   )
 ]
 
-#new-section("Criticism")
+#new-section("GVSoC architecture")
+
 #slide[
-  - Low memory even for IoT devices, unfeasible for testing intensive workloads
-]
-
-#new-section[My first section]
-#slide[
-  = The Fundamental Theorem of Calculus
-
-  For $f = (dif F) / (dif x)$ we _know_ that
-  $
-    integral_a^b f(x) dif x = F(b) - F(a)
-  $
-
-  See `https://en.wikipedia.org/wiki/Fundamental_theorem_of_calculus`
+  == Overview
+  - Event-driven simulator targeting the PULP architecture
+  - Models the uarch + common building blocks (cores, memory, peripherals, interconnects, ...)
+  - Designed to support easy testing of arch + uarch + I/O functionality side-by-side
+  - Offers debug tools and HW counters for early-stage perf evaluation
 ]
 
 #slide[
-  slide without a title
-]
-
-#new-section[My second section]
-
-#slide[
-  = Heron algorithm
-
-  ```julia
-  function heron(x)
-      r = x
-      while abs(r^2 - x) > eps()
-          r = (r + x / r) / 2
-      end
-      return r
-  end
-
-  @test heron(42) ≈ sqrt(42)
-  ```
+  == Structure
+  - Comprised of three main components:
+    - C++ models: simulate the behavior components (cores, memories, DMA, peripherals, ...)
+    - JSON configs: specify architecture params (core counts, interconnect bw/latency, ...)
+    - Python generators: orchestrate the instantiation of components
+    - Compile C++ models first $->$ quick prototyping of different system configurations without the need to rebuild the models
 ]
 
 #slide[
-  #show: focus
-  Something very important
+  #figure(
+    image("images/gvsoc-overview.png", width: 85%),
+    caption: [
+      Overview of the main components of GVSoC.
+    ],
+  )
+]
+
+#slide[
+  == Structure
+  - GVSoC components interact through *message-passing*
+  - Components receive *requests* and can choose to handle them by themselves or forward them to another component
+  - Tries to simulate latency accurately (e.g. when requests go through multiple components)
+]
+
+#slide[
+  #figure(
+    image("images/gvsoc-request.png", width: 85%),
+    caption: [
+      Example of a GVSoC request lifecycle.
+    ],
+  )
+]
+
+#slide[
+  == Time modeling
+  - A *global time engine* manages the overall time (at picosecond scale)
+  - *Clock engines* model individual clock sources
+    - Forward monotone counters associated with a circular event queue
+    - Each engine defines a *window* $T_w$; every event that will happen within $T_w$ cycles in included in the circular queue
+    - Simultaneous events are executed sequentially within the same cycle
+]
+
+#slide[
+  == Time modeling
+  - *Clock engines* model individual clock sources
+    - Events outside of the $T_w$ window are sent to a separate ordered queue (called the *delayed event queue*)
+    - Whenever a lap around the circular event queue is completed, events are read from the delayed event queue
+]
+
+#slide[
+  #figure(
+    image("images/gvsoc-event-queue.png", width: 85%),
+    caption: [
+      Overview of the GVSoC event queue.
+    ],
+  )
+]
+
+#slide[
+  == Time modeling
+  - All componentes are related to a *clock domain*, i.e. a tree of clock sources (with associated clock engines)
+  - Mechanisms for synchronizing requests across clock domains (*stubs*)
+]
+
+#slide[
+  #figure(
+    image("images/gvsoc-time-engine.png", width: 100%),
+    caption: [
+      Overview of the GVSoC time engine.
+    ],
+  )
+]
+
+#slide[
+  == Hardware perf counters
+  - Models performance metrics for real hardware
+  - Full tracing capabilities for events in GVSoC
+  #figure(
+    image("images/gvsoc-hw-perfcounters.png", width: 40%),
+    // caption: [
+    //   Overview of the GVSoC time engine.
+    // ],
+  )
+]
+
+#new-section("Use cases and results")
+#slide[
+  The author goes over 3 use case studies:
+  - Execution of a full MobileNetV1 model
+  - Running commonly-used DSP kernels using the PULP CL
+  - Integrating a custom convolution hw accelerator in PULP CL
+]
+
+#slide[
+  == MobileNetV1
+  - Emulated both on GVSoC and on a Xilinx ZCU102 FPGA
+  - Uses PULP CL cores in a SIMD fashion
+  - Compares simulation error between FPGA and GVSoC
+]
+
+#slide[
+  #figure(
+    image("images/gvsoc-mobilenetv1.png", width: 115%),
+    // caption: [
+    //   Overview of the GVSoC time engine.
+    // ],
+  )
+]
+
+#slide[
+  == DSP kernels + custom convolution accelerator
+  - Emulated only on GVSoC
+  - Explores performance scalability in response to number of cores and TCDM banks
+]
+
+#slide[
+  #figure(
+    image("images/gvsoc-remaining.png", width: 70%),
+    // caption: [
+    //   Overview of the GVSoC time engine.
+    // ],
+  )
+]
+
+#new-section("Comparison with other tools and conclusion")
+#slide[
+  #figure(
+    image("images/gvsoc-comparison.png", width: 115%),
+    // caption: [
+    //   Overview of the GVSoC time engine.
+    // ],
+  )
+]
+
+#slide[
+  == Conclusion
+  - GVSoC offers comparable performance to other event-driven timing simulators
+  - Lots of flexibility for prototyping and doing early validation on SoCs
+  - Shows potential for simulating IoT/low-power devices using the PULP architecture
+]
+
+#new-section("Discussion of the paper")
+#slide[
+  == Discussion
+  - The good:
+    - Very well-written, lots of content, informative discussion of the internals of GVSoC's architecture
+    - The GVSoC framework itself is open source and available on GitHub
+    - Provides a useful tool for other researchers to prototype their platforms on
+    - Presents a good performance comparison with other available simulation tools
+]
+
+#slide[
+  == Discussion
+  - The bad:
+    - Very rushed discussion of the use cases and testing methodology
+      - e.g. how exactly are they leveraging the PULP CL for accelerating MobileNetV1?
+    - Would like to see more details about the logarithmic interconnect bus
+    - Only applicable to the simulation of resource-constrained systems (and especifically the ones using the PULP architecture)
+]
+
+#slide[
+  == Discussion
+  - The ugly
+    - GVSoC's documentation is lacking
+    - No source code for reproducing the tests in the paper
+    - Most examples in GVSoC's documentation use the GAP9 core, which is *closed-source* and thus most examples in the docs are rendered useless
+      - Some important features (such as GDB debugging) only work on this proprietary core
 ]
