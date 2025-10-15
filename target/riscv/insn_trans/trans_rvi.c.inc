@@ -1221,3 +1221,144 @@ static bool trans_csrrci(DisasContext *ctx, arg_csrrci * a)
                              ctx->zero, ctx->zero, mask, ctx->zero);
     }
 }
+
+static bool trans_bitcnt(DisasContext *ctx, arg_bitcnt *a)
+{
+    TCGLabel *loop_source1 = gen_new_label();
+    TCGLabel *loop_source2 = gen_new_label();
+    TCGv source1, source2, dstval, cntval;
+
+    dstval  = tcg_temp_new();
+    cntval  = tcg_temp_new();
+
+    source1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    source2 = get_gpr(ctx, a->rs2, EXT_NONE);
+
+    tcg_gen_movi_tl(cntval, 0);
+
+    gen_set_label(loop_source1);
+    tcg_gen_andi_tl(dstval, source1, 1);
+    tcg_gen_shri_tl(source1, source1, 1);
+    tcg_gen_add_tl(cntval, cntval, dstval);
+    tcg_gen_brcondi_tl(TCG_COND_NE, source1, 0, loop_source1);
+
+    gen_set_label(loop_source2);
+    tcg_gen_andi_tl(dstval, source2, 1);
+    tcg_gen_shri_tl(source2, source2, 1);
+    tcg_gen_add_tl(cntval, cntval, dstval);
+    tcg_gen_brcondi_tl(TCG_COND_NE, source2, 0, loop_source2);
+
+    gen_set_gpr(ctx, a->rd, cntval);
+
+    return true;
+}
+
+static bool trans_bitrev(DisasContext *ctx, arg_bitrev *a)
+{
+    TCGLabel *loop = gen_new_label();
+    TCGv src, result, tmp, count;
+
+    result = tcg_temp_new();
+    tmp = tcg_temp_new();
+    count = tcg_temp_new();
+
+    tcg_gen_movi_tl(result, 0);
+    tcg_gen_movi_tl(count, 0);
+
+    src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    gen_set_label(loop);
+    // tmp = src & 1; result += tmp; result <<= 1; src >>= 1;
+    tcg_gen_andi_tl(tmp, src, 1);
+    tcg_gen_add_tl(result, result, tmp);
+    tcg_gen_shli_tl(result, result, 1);
+    tcg_gen_shri_tl(src, src, 1);
+    tcg_gen_addi_tl(count, count, 1);
+    tcg_gen_brcondi_tl(TCG_COND_LT, count, 63, loop);
+
+    gen_set_gpr(ctx, a->rd, result);
+
+    return true;
+}
+
+static bool trans_cclz(DisasContext *ctx, arg_cclz *a)
+{
+    TCGLabel *loop = gen_new_label();
+    TCGLabel *loop_out = gen_new_label();
+    TCGv src, tmp, count;
+
+    tmp = tcg_temp_new();
+    count = tcg_temp_new();
+
+    tcg_gen_movi_tl(tmp, 0);
+    tcg_gen_movi_tl(count, 0);
+
+    src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    gen_set_label(loop);
+
+    tcg_gen_rotli_tl(src, src, 1);
+    tcg_gen_andi_tl(tmp, src, 1);
+    // exit if we find a 1
+    tcg_gen_brcondi_tl(TCG_COND_EQ, tmp, 1, loop_out);
+    // increment counter
+    tcg_gen_addi_tl(count, count, 1);
+    // keep looping as long as we haven't finished looking at
+    // all the bits
+    tcg_gen_brcondi_tl(TCG_COND_LT, count, 64, loop);
+
+    gen_set_label(loop_out);
+
+    gen_set_gpr(ctx, a->rd, count);
+
+    return true;
+}
+
+static bool trans_cctz(DisasContext *ctx, arg_cctz *a)
+{
+    TCGLabel *loop = gen_new_label();
+    TCGLabel *loop_out = gen_new_label();
+    TCGv src, tmp, count;
+
+    tmp = tcg_temp_new();
+    count = tcg_temp_new();
+
+    tcg_gen_movi_tl(tmp, 0);
+    tcg_gen_movi_tl(count, 0);
+
+    src = get_gpr(ctx, a->rs1, EXT_NONE);
+
+    gen_set_label(loop);
+
+    tcg_gen_andi_tl(tmp, src, 1);
+    tcg_gen_shri_tl(src, src, 1);
+    // exit if we find a 1
+    tcg_gen_brcondi_tl(TCG_COND_EQ, tmp, 1, loop_out);
+    // increment counter
+    tcg_gen_addi_tl(count, count, 1);
+    // keep looping as long as we haven't finished looking at
+    // all the bits
+    tcg_gen_brcondi_tl(TCG_COND_LT, count, 64, loop);
+
+    gen_set_label(loop_out);
+
+    gen_set_gpr(ctx, a->rd, count);
+
+    return true;
+}
+
+static bool trans_multmod(DisasContext *ctx, arg_multmod *a)
+{
+    TCGv rs1, rs2, rd;
+
+    rs1 = get_gpr(ctx, a->rs1, EXT_NONE);
+    rs2 = get_gpr(ctx, a->rs2, EXT_NONE);
+    rd = get_gpr(ctx, a->rd, EXT_NONE);
+
+    tcg_gen_mul_tl(rd, rd, rs1);
+    tcg_gen_rem_tl(rd, rd, rs2);
+
+    gen_set_gpr(ctx, a->rd, rd);
+
+    return true;
+}
