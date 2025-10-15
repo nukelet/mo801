@@ -1,0 +1,4 @@
+[submodule "labs/qemu/qemu"]
+	path = labs/qemu/qemu
+	url = https://github.com/nukelet/qemu.git
+	branch = mo801
