@@ -1,0 +1,8 @@
+D$ Bytes Read:            2217680881
+D$ Bytes Written:         203676768
+D$ Read Accesses:         302387533
+D$ Write Accesses:        33850595
+D$ Read Misses:           17521672
+D$ Write Misses:          2321528
+D$ Writebacks:            2509511
+D$ Miss Rate:             5.902%
