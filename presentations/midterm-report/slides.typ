@@ -13,239 +13,315 @@
 #let cetz-canvas = touying-reducer.with(reduce: cetz.canvas, cover: cetz.draw.hide.with(bounds: true))
 #let fletcher-diagram = touying-reducer.with(reduce: fletcher.diagram, cover: fletcher.hide)
 
+#set text(font: "Fira Sans")
 #show: university-theme.with(
   aspect-ratio: "16-9",
   // align: horizon,
   // config-common(handout: true),
   config-common(frozen-counters: (theorem-counter,)),  // freeze theorem counter for animation
   config-info(
-    title: [Title],
-    subtitle: [Subtitle],
-    author: [Authors],
-    date: datetime.today(),
-    institution: [Institution],
-    logo: emoji.school,
+    title: [Midterm report],
+    subtitle: [MO801 - Topics in Hardware and Computer Architecture],
+    author: [Vinicius Peixoto],
+    institution: [Institute of Computing, UNICAMP],
+    date: "October 2025",
   ),
 )
 
-#set heading(numbering: numbly("{1}.", default: "1.1"))
+// #set heading(numbering: numbly("{1}.", default: "1.1"))
 
 #title-slide()
+
+#slide(
+  align(center, text(size: 50pt, "Code available at:\ngithub.com/nukelet/mo801"))
+)
 
 == Outline <touying:hidden>
 
 #components.adaptive-columns(outline(title: none, indent: 1em))
 
-= Animation
+= Lab 01: Spike
 
-== Simple Animation
+== Methodology
 
-We can use `#pause` to #pause display something later.
+Different implementations of matmul:
 
-#pause
+- naive (outer $->$ inner: $M$, $N$, $K$)
+- alt (outer $->$ inner: $N$, $M$, $K$)
+- transpose (scalar product of rows by rows)
+- vector (vectorized, modified `fmadd.q` instruction)
 
-Just like this.
+Compromises:
 
-#meanwhile
+- No i-cache (small code size)
+- No L2 cache (for simplicity)
+- $M = N = 256$ ($512$ took way too long to run)
 
-Meanwhile, #pause we can also use `#meanwhile` to #pause display other content synchronously.
+---
 
-#speaker-note[
-  + This is a speaker note.
-  + You won't see it unless you use `config-common(show-notes-on-second-screen: right)`
-]
+#{
+  show table.cell: set text(size: 20pt)
+  figure(
+    table(
+      columns: (auto, auto, auto, auto),
+      align: center,
+      table.header(
+        [*`sets`*], [*`ways`*], [*`bsize`*], [*`total size`*]
+      ),
+      [256], [1], [32], [8 KiB],
+      [128], [2], [32], [8 KiB],
+      [64], [4], [32], [8 KiB],
+      [64], [2], [64], [8 KiB],
+      [128], [2], [64], [16 KiB],
+      [256], [2], [64], [32 KiB],
+      [128], [2], [128], [32 KiB],
+      [16384], [1], [32], [512 KiB],
+      [8192], [2], [32], [512 KiB],
+      [4096], [4], [32], [512 KiB],
+      [8192], [2], [64], [1024 KiB],
+      [16384], [2], [64], [2048 KiB],
+      [8192], [2], [128], [2048 KiB],
+    ),
+    caption: [Cache dimensions used in the experiment.],
+  )
+}
 
+---
 
-== Complex Animation
+== Hello world
 
-At subslide #touying-fn-wrapper((self: none) => str(self.subslide)), we can
-
-use #uncover("2-")[`#uncover` function] for reserving space,
-
-use #only("2-")[`#only` function] for not reserving space,
-
-#alternatives[call `#only` multiple times \u{2717}][use `#alternatives` function #sym.checkmark] for choosing one of the alternatives.
-
-
-== Callback Style Animation
-
-#slide(
-  repeat: 3,
-  self => [
-    #let (uncover, only, alternatives) = utils.methods(self)
-
-    At subslide #self.subslide, we can
-
-    use #uncover("2-")[`#uncover` function] for reserving space,
-
-    use #only("2-")[`#only` function] for not reserving space,
-
-    #alternatives[call `#only` multiple times \u{2717}][use `#alternatives` function #sym.checkmark] for choosing one of the alternatives.
-  ],
+#figure(
+  image("./images/q1-icache.png")
 )
 
+---
 
-== Math Equation Animation
-
-Equation with `pause`:
-
-$
-  f(x) &= pause x^2 + 2x + 1 \
-  &= pause (x + 1)^2 \
-$
-
-#meanwhile
-
-Here, #pause we have the expression of $f(x)$.
-
-#pause
-
-By factorizing, we can obtain this result.
-
-
-== CeTZ Animation
-
-CeTZ Animation in Touying:
-
-#cetz-canvas({
-  import cetz.draw: *
-
-  rect((0, 0), (5, 5))
-
-  (pause,)
-
-  rect((0, 0), (1, 1))
-  rect((1, 1), (2, 2))
-  rect((2, 2), (3, 3))
-
-  (pause,)
-
-  line((0, 0), (2.5, 2.5), name: "line")
-})
-
-
-== Fletcher Animation
-
-Fletcher Animation in Touying:
-
-#fletcher-diagram(
-  node-stroke: .1em,
-  node-fill: gradient.radial(blue.lighten(80%), blue, center: (30%, 20%), radius: 80%),
-  spacing: 4em,
-  edge((-1, 0), "r", "-|>", `open(path)`, label-pos: 0, label-side: center),
-  node((0, 0), `reading`, radius: 2em),
-  edge((0, 0), (0, 0), `read()`, "--|>", bend: 130deg),
-  pause,
-  edge(`read()`, "-|>"),
-  node((1, 0), `eof`, radius: 2em),
-  pause,
-  edge(`close()`, "-|>"),
-  node((2, 0), `closed`, radius: 2em, extrude: (-2.5, 0)),
-  edge((0, 0), (2, 0), `close()`, "-|>", bend: -40deg),
+#figure(
+  image("./images/q1-dcache.png")
 )
 
+---
 
-= Theorems
+== Matmul
 
-== Prime numbers
-
-#definition[
-  A natural number is called a #highlight[_prime number_] if it is greater
-  than 1 and cannot be written as the product of two smaller natural numbers.
-]
-#example[
-  The numbers $2$, $3$, and $17$ are prime.
-  @cor_largest_prime shows that this list is not exhaustive!
-]
-
-#theorem(title: "Euclid")[
-  There are infinitely many primes.
-]
-#pagebreak(weak: true)
-#proof[
-  Suppose to the contrary that $p_1, p_2, dots, p_n$ is a finite enumeration
-  of all primes. Set $P = p_1 p_2 dots p_n$. Since $P + 1$ is not in our list,
-  it cannot be prime. Thus, some prime factor $p_j$ divides $P + 1$. Since
-  $p_j$ also divides $P$, it must divide the difference $(P + 1) - P = 1$, a
-  contradiction.
-]
-
-#corollary[
-  There is no largest prime number.
-] <cor_largest_prime>
-#corollary[
-  There are infinitely many composite numbers.
-]
-
-#theorem[
-  There are arbitrarily long stretches of composite numbers.
-]
-
-#proof[
-  For any $n > 2$, consider $
-    n! + 2, quad n! + 3, quad ..., quad n! + n
-  $
-]
-
-
-= Others
-
-== Side-by-side
-
-#slide(composer: (1fr, 1fr))[
-  First column.
-][
-  Second column.
-]
-
-
-== Multiple Pages
-
-#lorem(200)
-
-
-#show: appendix
-
-= Appendix
-
-== Appendix
-
-Please pay attention to the current slide number.
-
-#bytefield(
-// Config the header
-bitheader(
-"bytes",
-// adds every multiple of 8 to the header.
-0, [start], // number with label
-5,
-// number without label
-12, [#text(14pt, fill: red, "test")],
-23, [end_test],
-24, [start_break],
-36, [Fix], // will not be shown
-angle: -50deg, // angle (default: -60deg)
-text-size: 8pt, // length (default: global header_font_size or 9pt)
-),
-// Add data fields (bit, bits, byte, bytes) and notes
-// A note always aligns on the same row as the start of the next data field.
-note(left)[#text(16pt, fill: blue, "Testing")],
-bytes(3,fill: red.lighten(30%))[Test],
-note(right)[#set text(9pt); #sym.arrow.l This field \ breaks into 2 rows.],
-bytes(2)[Break],
-note(left)[#set text(9pt); and continues \ here #sym.arrow],
-bits(24,fill: green.lighten(60%))[Fill],
-group(right,3)[spanning 3 rows],
-bytes(12)[#set text(20pt); *Multi* Row],
-note(left, bracket: true)[Flags],
-bits(4)[#text(8pt)[reserved]],
-flag[#text(8pt)[SYN]],
-flag(fill: orange.lighten(60%))[#text(8pt)[ACK]],
-flag[#text(8pt)[BOB]],
-bits(25, fill: purple.lighten(60%))[Padding],
-// padding(fill: purple.lighten(40%))[Padding],
-bytes(2)[Next],
-bytes(8, fill: yellow.lighten(60%))[Multi break],
-note(right)[#emoji.checkmark Finish],
-bytes(2)[_End_],
+#figure(
+  image("./images/q2-naive-dcache.png")
 )
+
+---
+
+- Based on the results: choice of a 64 KiB i-cache (`256:4:64`)
+
+- Counting instructions:
+  - `riscv64-unknown-elf-objdump --disassemble=<symbol-name>`
+  - `spike -g ...`
+  - Parse histogram, sum counts from addresses within the function
+
+---
+
+- Implementation of vectorized `matmul`
+  - GCC 14 and 15 do not yet support the Q extension
+  - `riscv64-unknown-elf-as` does though
+  - Workaround: manually implement `asm` stub, export it as symbol, call it from regular code
+- Several hurdles:
+  - `pk` needs to be compiled with support for the `F`/`D`/`Q` extensions
+  - Need to run `spike` with the `--isa=rv64gqc` flag (otherwise `pk` falls back to softfloat and traps floating point instructions)
+  - Need to take care with 128-bit alignment lest we get faults (`-O0` makes the program crash due to this)
+
+---
+
+  ```asm
+  .global fmaddq_stub
+  fmaddq_stub:
+      flq fa0, 0(a1)
+      flq fa1, 0(a2)
+      flq fa2, 0(a3)
+      fmadd.q fa0, fa0, fa1, fa2
+      fsq fa0, 0(a0)
+      ret
+  ```
+
+  ```C
+  void fmaddq_stub(float result[4], float a[4], float b[4], float c[4]);
+  ```
+
+---
+
+
+#figure(
+  image("./images/q2-inst-count.png")
+)
+
+---
+
+#figure(
+  image("./images/q2-miss-rate.png")
+)
+
+---
+
+== Takeaways
+
+- `naive` and `alt` perform pretty bad cache locality-wise, `transpose` already much better
+- The vectorized variant reduces the instruction count by ~80% (very noticeable speedup in execution on Spike)
+  - Seems to be worth using even at higher cost in latency/power consumption
+- No significant improvement from `-O2` to `-O3` (but definitely from `-O0` to `O2`)
+
+---
+
+= Lab 02: QEMU
+
+---
+
+- R-type:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(7)[funct7],
+    bits(5)[rs2],
+    bits(5)[rs1],
+    bits(3)[funct3],
+    bits(5)[rd],
+    bits(7)[opcode],
+  )
+}
+
+- I-type:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(11)[imm],
+    bits(5)[rs1],
+    bits(3)[funct3],
+    bits(5)[rd],
+    bits(7)[opcode],
+  )
+}
+
+---
+
+- `bitrev`:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(11)[`00000000000`],
+    bits(5)[rs1],
+    bits(3)[`000`],
+    bits(5)[rd],
+    bits(7)[`1111111`],
+  )
+}
+
+- `cclz`:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(11)[`00000000000`],
+    bits(5)[rs1],
+    bits(3)[`001`],
+    bits(5)[rd],
+    bits(7)[`1111111`],
+  )
+}
+
+- `cctz`:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(11)[`00000000000`],
+    bits(5)[rs1],
+    bits(3)[`010`],
+    bits(5)[rd],
+    bits(7)[`1111111`],
+  )
+}
+
+---
+
+- `multmod`:
+#{
+  set text(16pt);
+  bytefield(
+    msb: left,
+    bitheader("bounds"),
+    bits(7)[`1111111`],
+    bits(5)[rs2],
+    bits(5)[rs1],
+    bits(3)[`110`],
+    bits(5)[rd],
+    bits(7)[`0110011`],
+  )
+}
+
+---
+
+#{
+  set text(20pt)
+  ```C
+  static bool trans_multmod(DisasContext *ctx, arg_multmod *a)
+  {
+      TCGv rs1, rs2, rd;
+
+      rs1 = get_gpr(ctx, a->rs1, EXT_NONE);
+      rs2 = get_gpr(ctx, a->rs2, EXT_NONE);
+      rd = get_gpr(ctx, a->rd, EXT_NONE);
+
+      tcg_gen_mul_tl(rd, rd, rs1);
+      tcg_gen_rem_tl(rd, rd, rs2);
+
+      gen_set_gpr(ctx, a->rd, rd);
+
+      return true;
+  }
+  ```
+}
+
+---
+
+= Lab 03: gem5
+
+---
+
+== Overview
+
+- gem5 is a functional, event driven simulator for computer systems
+- capable of emulating several arches (x86, arm64, riscv, ...)
+- modular, composable, extensible
+
+== Lessons learned
+
+- Decided to build locally since I run Ubuntu 25.04 on my machine; ran into several build issues that I fixed along the way
+- Was able to run through the best part of the "Learning gem5" tutorial
+  - #link("https://www.gem5.org/documentation/learning_gem5/introduction/")
+- Was able to set up and reproduce the tests in the SSCAD 2024 repo from LSC
+- Struggling to grasp the details but understood the general workflow for extending the ISA and configuring uarch details within gem5
+
+---
+
+= Final project proposal
+
+---
+
+== Proposal
+
+- New extension currently under development: Supervisor Domain Access Protection
+- #link("https://github.com/riscv/riscv-smmtt")
+- Aims to enable confidential computing use cases on RISC-V
+- Defines a data structure called `MPT` (Memory Protection Table) that configures and enforces read/write permissions to physical memory addresses (or device-mapped regions) based on `SDIDs` (Supervisor Domain Identifiers)
+
+---
+
+- *Proposal*: implement at least a subset of the following extensions in Spike
+  - `Smsdid`: interface to program the active supervisor domain under which a hart is operating
+  - `Smmpt`: extension to set the access permissions for a memory region or page associated with a supervisor domain
+- *Objective*: develop a proof-of-concept of the extensions, showing effective resource isolation between different `SDIDs`
