@@ -11,7 +11,7 @@
 
 void fmaddq_stub(float result[4], float a[4], float b[4], float c[4]);
 
-void matmul(float a[MAT_SIZE][MAT_SIZE], float b[MAT_SIZE][MAT_SIZE],
+void matmul_naive(float a[MAT_SIZE][MAT_SIZE], float b[MAT_SIZE][MAT_SIZE],
 	    float c[MAT_SIZE][MAT_SIZE], size_t size)
 {
 	for (size_t i = 0; i < size; i++) {
@@ -26,9 +26,9 @@ void matmul(float a[MAT_SIZE][MAT_SIZE], float b[MAT_SIZE][MAT_SIZE],
 void matmul_alt(float a[MAT_SIZE][MAT_SIZE], float b[MAT_SIZE][MAT_SIZE],
 		float c[MAT_SIZE][MAT_SIZE], size_t size)
 {
-	for (size_t j = 0; j < size; j++) {
-		for (size_t i = 0; i < size; i++) {
-			for (size_t k = 0; k < size; k++) {
+	for (size_t k = 0; k < size; k++) {
+		for (size_t j = 0; j < size; j++) {
+			for (size_t i = 0; i < size; i++) {
 				c[i][j] += a[i][k] * b[k][j];
 			}
 		}
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	}
 
 	if (strcmp(argv[1], "naive") == 0) {
-		matmul(mat_a, mat_b, mat_c, MAT_SIZE);
+		matmul_naive(mat_a, mat_b, mat_c, MAT_SIZE);
 	} else if (strcmp(argv[1], "transpose") == 0) {
 		matmul_transpose(mat_a, mat_bt, mat_c, MAT_SIZE);
 	} else if (strcmp(argv[1], "vector") == 0) {
