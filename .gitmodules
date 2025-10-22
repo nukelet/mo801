@@ -2,7 +2,7 @@
 	path = labs/qemu/qemu
 	url = https://github.com/nukelet/qemu.git
 	branch = mo801
-[submodule "labs/spike/spike"]
-	path = labs/spike/spike
+[submodule "labs/spike/riscv-spike"]
+	path = labs/spike/riscv-spike
 	url = https://github.com/nukelet/riscv-isa-sim.git
 	branch = mo801
