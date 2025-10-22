@@ -6,3 +6,6 @@
 	path = labs/spike/riscv-spike
 	url = https://github.com/nukelet/riscv-isa-sim.git
 	branch = mo801
+[submodule "labs/spike/riscv-pk"]
+	path = labs/spike/riscv-pk
+	url = https://github.com/riscv-software-src/riscv-pk.git
